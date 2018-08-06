@@ -1,0 +1,224 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Jan 25 18:24:44 2018
+
+"""
+import pyodbc
+import pycurl
+from io import BytesIO
+import re
+from bs4 import BeautifulSoup
+import pandas as pd
+from pandas import DataFrame
+import string
+from time import gmtime, strftime
+
+
+class LoadHTML(object):
+    def __init__(self, website):
+        self.website = website
+       
+    def Load(self):
+        buffer = BytesIO()
+        c = pycurl.Curl()
+        c.setopt(c.URL,self.website)
+        c.setopt(c.WRITEDATA, buffer)
+        c.perform()
+        c.close()
+      
+        #Dont really understand this part, but it puts the body into the correct HTML for BeautifulSoup
+        body = buffer.getvalue()
+        # Body is a byte string.
+        # We have to know the encoding in order to print it to a text file
+        # such as standard output.
+        body.decode('iso-8859-1')
+      
+        soup = BeautifulSoup(body, 'lxml')
+        return soup
+       
+
+
+    
+class LoadPlayByPlay(object):
+    def __init__(self, website):
+        self.website = website
+  
+    def PlayByPlay(self):
+       
+        #New HMTL Load Class
+        soup = LoadHTML(self.website).Load()
+       
+        play_by_play = soup.find(id = "inning-all")
+        total_game = {}
+        for table in play_by_play.find_all("table"):
+            total_game[table.caption.string] = []
+            for row in table.find_all("th",scope = 'row'):
+                total_game[table.caption.string].append(row.string)
+ 
+        total_game_df = pd.DataFrame(columns = ['Inning Header','Play By Play'])
+        for inning in total_game:
+            pbp = pd.DataFrame(total_game[inning], columns = ['Play By Play'])
+            pbp['Inning Header'] = inning
+            total_game_df = total_game_df.append(pbp, ignore_index = True)
+ 
+        def team_at_bat(row):
+            return row['Inning Header'].split(' - ')[0]
+        total_game_df['Hitting Team'] = total_game_df.apply(team_at_bat, axis = 1)
+ 
+        def inning_number(row):
+            inning_number = row['Inning Header'].split()[-1:][0]
+            return inning_number[:len(inning_number) - 2] #Will dynamically take off the last 2 characters to get number
+        total_game_df['Inning Number'] = total_game_df.apply(inning_number, axis = 1)
+        home_vs_away_teams = []
+        for x in soup.find_all("h1"):
+            for span in x.find_all('span'):
+                home_vs_away_teams.append(span.string)
+        away_team = home_vs_away_teams[0]
+        home_team = home_vs_away_teams[1]
+        total_game_df['Away Team'] = away_team
+        total_game_df['Home Team'] = home_team
+        game_details = soup.find_all(attrs={'class': 'game-details'})
+        for x in game_details:
+            date = x.find('dd').string
+        total_game_df['Date'] = date
+      
+        
+        # =================================================================
+        # =================================================================
+      
+        def pbp_result(x):
+            try:
+                   
+                if "struck out looking" in x[0]:
+                    return "KL"
+                elif "struck out swinging" in x[0]:
+                    return "KS"
+                elif "struck out" in x[0]:
+                    return "K"
+                elif ", SF" in x[0] or ("flied out" in x[0] and ", SAC" in x[0]):
+                    return "SACF"
+                elif "walked" in x[0]:
+                    return "BB"
+                elif "SAC, bunt" in x[0]:
+                    return "SACB"
+                elif "hit by pitch" in x[0]:
+                    return "HBP"
+                elif "singled" in x[0]:
+                    return "1B"
+                elif "doubled" in x[0]:
+                    return "2B"
+                elif "tripled" in x[0]:
+                    return "3B"
+                elif "homered" in x[0]:
+                    return "HR"
+                elif ("grounded out" in x[0]) or (("out at first") in x[0] and "picked off" not in x[0] and "caught steeling" not in x[0]):
+                    return "GO"
+                elif "flied out" in x[0] and ", SAC" not in x[0]:
+                    return "FLYO"
+                elif "popped up" in x[0]:
+                    return "PU"
+                elif "catcher's interference" in x[0]:
+                    return "CI"
+                elif "fouled out" in x[0]:
+                    return "FO"
+                elif "grounded into double play" in x[0]:
+                    return "GDP"
+                elif "hit into double play" in x[0]:
+                    return "DP"
+                elif "reached on a fielder's choice" in x[0]:
+                    return "FC"
+                elif ("lined out" in x[0]) or ("lined into" in x[0]):
+                    return "LO"
+                elif ("reached on an error" in x[0]) or ("reached on a throwing error" in x[0]) or ("reached on a fielding error" in x[0]):
+                    return "ROE"
+                elif "batter's interference" in x[0]:
+                    return "BI"
+                elif "infield fly" in x[0]:
+                    return "PU"
+                elif "flied into" in x[0]:
+                    return "FLYO"
+                elif "picked off" in x[0]:
+                    return "PI"
+                elif "stolen base" in x[0]:
+                    return "SB"
+                elif "stole" in x[0]:
+                    return "SB"
+                elif "caught stealing" in x[0]:
+                    return "CS"
+                else:
+                    return None
+            except (TypeError, AttributeError) as e:
+                    return None
+ 
+        total_game_df['Result'] = total_game_df[['Play By Play']].apply(pbp_result, axis = 1)
+      
+        # =================================================================
+        # =================================================================
+       
+        def get_count(pbp):
+            try:
+                a = pbp[0].split()
+                for element in a:
+                    if element.startswith('('):
+                        return element[1:4]
+            except (TypeError, AttributeError) as e:
+                    return None
+ 
+        total_game_df['Count'] = total_game_df[['Play By Play']].apply(get_count, axis = 1)
+        # =================================================================
+        # =================================================================
+      
+        def pitch_seq(pbp):
+            try:
+                seq = pbp['Play By Play']
+                no_period = str.maketrans('.', ' ')
+                if '(' in seq and ')' in seq:
+                    if len(seq.translate(no_period).strip().split('(')[1].split(')')[0].split()) == 1:
+                        return None
+                    else:
+                        return seq.translate(no_period).strip().split('(')[1].split(')')[0].split()[1]
+                else:
+                    return None
+            except (TypeError, AttributeError) as e:
+                    return None
+        total_game_df['Pitch Sequence'] = total_game_df.apply(pitch_seq, axis = 1)
+        #----------------------------------------------------------------------------------------
+        #----------------------------------------------------------------------------------------
+      
+        position_locations = {'Left':['3b','ss','lf','shortstop'],
+                              'Center':['p','cf','c'],
+                              'Right':['1b','2b','rf']}
+        def location_of_pip(row):
+            try:
+                translator = str.maketrans(string.punctuation, ' '*len(string.punctuation))
+                if "right" in row['Play By Play'] and "center" in row['Play By Play'] :
+                    return "Center"
+                elif "left" in row['Play By Play'] and "center" in row['Play By Play'] :
+                    return "Center"
+                elif "center" in row['Play By Play']:
+                    return "Center"
+                elif "right" in row['Play By Play'] and "center" not in row['Play By Play'] :
+                    return "Right"
+                elif "left" in row['Play By Play'] and "center" not in row['Play By Play'] :
+                    return "Left"
+                else:
+                    for play in row['Play By Play'].split():
+                        play = play.translate(translator).strip()
+                        for loc in position_locations:
+                            for pos in position_locations[loc]:
+                                if pos in play and len(pos) > 1:
+                                    return loc
+                                if pos in play and len(pos) == 1 and pos == play:
+                                    return loc
+            except (TypeError, AttributeError) as e:
+                    return None
+        total_game_df['BIP Location'] = total_game_df.apply(location_of_pip, axis = 1)
+        return total_game_df
+  
+    
+    
+# Read a random Kansas State Baseball Game
+test_1 = LoadPlayByPlay('http://www.kstatesports.com/boxscore.aspx?id=2417&path=baseball').PlayByPlay()
+
+test_1

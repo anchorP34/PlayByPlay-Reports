@@ -1,0 +1,234 @@
+##############################################################
+#Zero ball counts
+##############################################################
+
+def oh_one(row):
+    pitch_seq = row['Pitch_Seq']
+    strikes = ['K','S','F']
+    if pd.isnull(pitch_seq) == True:
+        return 0
+    if pitch_seq[0] in strikes:
+        return 1
+    else:
+        return 0
+    
+def oh_two(row):
+    pitch_seq = row['Pitch_Seq']
+    strikes = ['K','S','F']
+    if pd.isnull(pitch_seq) == True:
+        return 0
+    if len(pitch_seq) < 2:
+        return 0
+    else:
+        if pitch_seq[0] in strikes and pitch_seq[1] in strikes:
+            return 1
+        else:
+            return 0
+
+##############################################################
+#One ball counts
+##############################################################
+def one_oh(row):
+    pitch_seq = row['Pitch_Seq']
+    if pd.isnull(pitch_seq) == True:
+        return 0
+    if pitch_seq[0] == "B":
+        return 1
+    else:
+        return 0
+    
+def one_one(row):
+    s_cnt = 0
+    b_cnt = 0
+    pitch_seq = row['Pitch_Seq']
+    strikes = ['K','S','F']
+    if pd.isnull(pitch_seq) == True:
+        return 0
+    if len(pitch_seq) < 2:
+        return 0
+    for pitch in range(2):
+        if pitch_seq[pitch] in strikes:
+            s_cnt +=1
+        else:
+            b_cnt +=1
+    if s_cnt ==1 and b_cnt == 1:
+        return 1
+    else:
+        return 0
+    
+def one_two(row):
+    s_cnt = 0
+    b_cnt = 0
+    pitch_seq = row['Pitch_Seq']
+    strikes = ['K','S','F']
+    if pd.isnull(pitch_seq) == True:
+        return 0
+    if len(pitch_seq) < 3:
+        return 0
+    for pitch in range(3):
+        if pitch_seq[pitch] in strikes:
+            s_cnt +=1
+        else:
+            b_cnt +=1
+    if s_cnt ==2 and b_cnt == 1:
+        return 1
+    else:
+        return 0
+    
+##############################################################
+#Two ball counts
+##############################################################
+def two_oh(row):
+    pitch_seq = row['Pitch_Seq']
+    if pd.isnull(pitch_seq) == True:
+        return 0
+    if len(pitch_seq) < 2:
+        return 0
+    else:
+        if pitch_seq[0:2] == 'BB':
+            return 1
+        else:
+            return 0
+    
+def two_one(row):
+    s_cnt = 0
+    b_cnt = 0
+    pitch_seq = row['Pitch_Seq']
+    strikes = ['K','S','F']
+    if pd.isnull(pitch_seq) == True:
+        return 0
+    if len(pitch_seq) < 3:
+        return 0
+    for pitch in range(3):
+        if pitch_seq[pitch] in strikes:
+            s_cnt +=1
+        else:
+            b_cnt +=1
+    if s_cnt ==1 and b_cnt == 2:
+        return 1
+    else:
+        return 0
+    
+def two_two(row):
+    s_cnt = 0
+    b_cnt = 0
+    pitch_seq = row['Pitch_Seq']
+    strikes = ['K','S','F']
+    if pd.isnull(pitch_seq) == True:
+        return 0
+    if len(pitch_seq) < 4:
+        return 0
+    for pitch in range(4):
+        if pitch_seq[pitch] in strikes:
+            s_cnt +=1
+        else:
+            b_cnt +=1
+    if s_cnt ==2 and b_cnt == 2:
+        return 1
+    else:
+        return 0
+    
+##############################################################
+#Three ball counts
+##############################################################
+def three_oh(row):
+    pitch_seq = row['Pitch_Seq']
+    if pd.isnull(pitch_seq) == True:
+        return 0
+    if len(pitch_seq) < 3:
+        return 0
+    else:
+        if pitch_seq[0:3] == 'BBB':
+            return 1
+        else:
+            return 0
+
+def three_one(row):
+    s_cnt = 0
+    b_cnt = 0
+    pitch_seq = row['Pitch_Seq']
+    strikes = ['K','S','F']
+    if pd.isnull(pitch_seq) == True:
+        return 0
+    if len(pitch_seq) < 4:
+        return 0
+    for pitch in range(4):
+        if pitch_seq[pitch] in strikes:
+            s_cnt +=1
+        else:
+            b_cnt +=1
+    if s_cnt ==1 and b_cnt == 3:
+        return 1
+    else:
+        return 0
+    
+def three_two(row):
+    s_cnt = 0
+    b_cnt = 0
+    pitch_seq = row['Pitch_Seq']
+    strikes = ['K','S','F']
+    if pd.isnull(pitch_seq) == True:
+        return 0
+    if len(pitch_seq) < 5:
+        return 0
+    for pitch in range(5):
+        if pitch_seq[pitch] in strikes:
+            s_cnt +=1
+        else:
+            b_cnt +=1
+    if s_cnt ==2 and b_cnt == 3:
+        return 1
+    else:
+        return 0
+    
+##############################################################
+# Length of at bat
+##############################################################
+
+def ab_length(row):
+    pitch_seq = row['Pitch_Seq']
+    r = row['Result']
+    if pd.isnull(pitch_seq) == True:
+        return 1
+    elif r in ['BB','KS','KL','K']:
+        return len(pitch_seq)
+    else:
+        return len(pitch_seq) + 1
+    
+    
+##############################################################
+# Strikes in count
+##############################################################
+
+def num_of_strikes(row):
+    cnt = row['Count']
+    return int(cnt.split('-')[1])
+
+##############################################################
+# Balls in bat
+##############################################################
+
+def num_of_balls(row):
+    cnt = row['Count']
+    return int(cnt.split('-')[0])
+
+##############################################################
+# If at bat ended in hit
+##############################################################
+
+def isHit(row):
+    r = row['Result']
+    if r in ['1B','2B','3B','HR']:
+        return 1
+    else:
+        return 0
+
+##############################################################
+# If at bat ended in getting on base
+##############################################################
+def OnBase(row):
+    r = row['Result']
+    if r in ['1B','2B','3B','HR', 'BB']:
+        return 1
+    else:
+        return 0

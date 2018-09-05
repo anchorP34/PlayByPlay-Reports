@@ -1,6 +1,16 @@
 # PlayByPlay-Reports
 This repository is to pull and analyze play by play results from D2 baseball and softball games.
 
+When I was at Washburn University playing baseball, it used to drive me crazy that there wasn't a very good scouting tool that you could use to report baseball games of smaller schools. The major leagues had it, D1 programs had it, so it didn't make sense to me that it should be so hard to get easily accessible information.
+
+I created these programs to make it easy for anyone to pull most baseball or softball games that are in the sidearm stats format, which is the most common format used for collegiate baseball and softball games.
+
+Some results that I found from my analysis:
+  1. When it comes to power numbers, being ahead in the count doesn't mean players will hit for more power. As a matter of fact, my analysis shows that for balls that are put in play, you're more likely to hit extra base hits deeper in counts than earlier in counts.
+  2. In predicting whether or not a player will get on base, you will not receive better predictions by knowing the counts that were experienced in the at bat. Knowing the different counts will yield almost identical results compared to just knowing the final count.
+  
+I hope you enjoy analyzing different trends in the data! Please comment below if there are any other analysis that you think would be interesting to analyze from this data.
+
 
 # PlayByPlay-Reports/FullGamePull
 This script is for the web scraping python algorithm for most D2 baseball and softball games. The example that is used in the script is for http://www.kstatesports.com/boxscore.aspx?id=2417&path=baseball, so games that have this format should work correctly.
@@ -22,7 +32,7 @@ This is the analysis for determing what counts are most important in determinig 
 
 The imports that are necessary are pandas to handle the dataframes, matplotlib and seaborn for visualizations, and scikitlearn for machine learning.
 
-The data that was pulled came from thousands of results pulled FullGamePull script and loaded to the Data Science Results CSV. Once it was loaded into a pandas dataframe, I removed records that did not have a pitch sequence available or were not 0-0 count results since they only had 1 pitch in the at bat. I did not try to infer what the pitch sequence was since there are multiple permutations of how an at bat can go, and these records hold the most information that can be pulled from an at bat.
+The data that was pulled came from thousands of results pulled FullGamePull script and loaded to the Data Science Results CSV. Once it was loaded into a pandas dataframe, I removed records that did not have a pitch sequence available or were not 0-0 count results since they only had 1 pitch in the at bat. I did not try to infer what the pitch sequence was since there are multiple permutations of how an at bat can go, and these records hold the most information that can be pulled from an at bat. Therefore, if there were at bats that had counts that could not be inferred as the total number of pitches, or were null for the pitch sequence, I deleted them from the dataset. I also did not have to work with categorical variables due to everything being created into bit flags.
 
 From the information in the Pitch Sequence column and the result column, I was able to create functions that determine if an at bat had one of the 12 different counts at some point in the at bat. I could also determine the finishing ball and strike count of the at bat, and the number of pitches seen in the at bat. 
 

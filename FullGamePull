@@ -17,9 +17,13 @@ from time import gmtime, strftime
 
 class LoadHTML(object):
     def __init__(self, website):
+        """ Takes in the website of a baseball or softball game and returns
+        the HTML body necessary to pull the play by play information.
+        """
         self.website = website
        
     def Load(self):
+        """ Loads the HTML body of the the website that was input """
         buffer = BytesIO()
         c = pycurl.Curl()
         c.setopt(c.URL,self.website)
@@ -42,10 +46,15 @@ class LoadHTML(object):
     
 class LoadPlayByPlay(object):
     def __init__(self, website):
+        """ Loads all play by play information and game details for the input website
+        Returns a dataframe with all data
+        """ 
         self.website = website
   
     def PlayByPlay(self):
-       
+        """ Creates dataframe with all game details and play by play informaiton, including where the ball was hit,
+        what count it was on, the location of the hit, and the result.
+        """
         #New HMTL Load Class
         soup = LoadHTML(self.website).Load()
        
@@ -63,10 +72,12 @@ class LoadPlayByPlay(object):
             total_game_df = total_game_df.append(pbp, ignore_index = True)
  
         def team_at_bat(row):
+            """ Returns the team that was hitting in that inning """
             return row['Inning Header'].split(' - ')[0]
         total_game_df['Hitting Team'] = total_game_df.apply(team_at_bat, axis = 1)
  
         def inning_number(row):
+            """ Returns the inning number """
             inning_number = row['Inning Header'].split()[-1:][0]
             return inning_number[:len(inning_number) - 2] #Will dynamically take off the last 2 characters to get number
         total_game_df['Inning Number'] = total_game_df.apply(inning_number, axis = 1)
@@ -88,6 +99,7 @@ class LoadPlayByPlay(object):
         # =================================================================
       
         def pbp_result(x):
+            """ Returns the result of the at bat """
             try:
                    
                 if "struck out looking" in x[0]:
@@ -157,6 +169,7 @@ class LoadPlayByPlay(object):
         # =================================================================
        
         def get_count(pbp):
+            """ Returns the final count of the at bat """
             try:
                 a = pbp[0].split()
                 for element in a:
@@ -170,6 +183,7 @@ class LoadPlayByPlay(object):
         # =================================================================
       
         def pitch_seq(pbp):
+            """ Returns pitch sequence of the at bat """
             try:
                 seq = pbp['Play By Play']
                 no_period = str.maketrans('.', ' ')
@@ -190,6 +204,7 @@ class LoadPlayByPlay(object):
                               'Center':['p','cf','c'],
                               'Right':['1b','2b','rf']}
         def location_of_pip(row):
+            """ Returns location of where the ball was hit on the field (left, center, right) """
             try:
                 translator = str.maketrans(string.punctuation, ' '*len(string.punctuation))
                 if "right" in row['Play By Play'] and "center" in row['Play By Play'] :
